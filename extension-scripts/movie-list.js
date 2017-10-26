@@ -268,19 +268,14 @@ function generateMainViewObjects() {
         }]
       },
       actions: [{
-          title: " ♥ ",
+          title: "♥ 　",
           handler: function(sender, indexPath) {
             var data = sender.object(indexPath)
-            favoriteItem(data)
-          }
-        },
-        {
-          title: " ↻ ",
-          handler: function(sender, indexPath) {
-            var id = sender.object(indexPath).id
-            $safari.open({
-              url: "https://movie.douban.com/subject/" + id
-            })
+            if (unique(data.id)) {
+              favoriteItem(data)
+            } else {
+              $ui.toast("You have favorited already")
+            }
           }
         }
       ]
@@ -295,7 +290,7 @@ function generateMainViewObjects() {
           url: url,
           handler: function(resp) {
             $ui.loading(false)
-            detailView(title, resp.data)
+            detailView(title, resp.data, data, true)
           }
         })
       },
@@ -346,16 +341,7 @@ function generateMainViewObjects() {
           }
         },
         {
-          title: " ↻ ",
-          handler: function(sender, indexPath) {
-            var id = sender.object(indexPath).id
-            $safari.open({
-              url: "https://movie.douban.com/subject/" + id
-            })
-          }
-        },
-        {
-          title: "●○",
+          title:  "●○ 　",
           handler: function(sender, indexPath) {
             var data = sender.object(indexPath)
             favoriteCheckUncheck(data, indexPath)
@@ -373,7 +359,7 @@ function generateMainViewObjects() {
           url: url,
           handler: function(resp) {
             $ui.loading(false)
-            detailView(title, resp.data)
+            detailView(title, resp.data, data)
           }
         })
       },
@@ -789,7 +775,7 @@ function mainView() {
   })
 }
 
-function detailView(title, data) {
+function detailView(title, data, cellData, showFavorite = false) {
   $ui.push({
     props: {
       title: title
@@ -891,7 +877,6 @@ function detailView(title, data) {
             rows: [{
               type: "text",
               props: {
-                id: "test",
                 editable: false,
                 selectable: false,
                 font: $font(15),
@@ -963,6 +948,107 @@ function detailView(title, data) {
                   }
                 }
               ]
+            },
+            {
+              // Open
+              type: "button",
+              props: {
+                radius: 5,
+                bgcolor: $color("white")
+              },
+              layout: function(make, view) {
+                var preView = view.prev
+                make.centerX.equalTo(preView)
+                make.top.equalTo(preView.bottom).offset(20)
+                make.size.equalTo($size(100, 30))
+              },
+              views: [{
+                type: "image",
+                props: {
+                  icon: $icon("022", $color("lightGray"), $size(72, 72)),
+                  bgcolor: $color("clear")
+                },
+                layout: function(make, view) {
+                  make.centerY.equalTo(view.super)
+                  make.width.height.equalTo(16)
+                  make.left.inset(10)
+                }
+              },
+              {
+                type: "label",
+                props: {
+                  text: "Open",
+                  font: $font("bold", 14),
+                  autoFontSize: true,
+                  align: true,
+                  textColor: $color("lightGray")
+                },
+                layout: function(make, view) {
+                  var preView = view.prev
+                  make.centerY.equalTo(view.super)
+                  make.left.equalTo(preView.right).offset(10)
+                  make.right.inset(10)
+                }
+              }],
+              events: {
+                tapped: function(sender) {
+                  $safari.open({
+                    url: "https://m.douban.com/movie/subject/" + cellData.id
+                  })
+                }
+              }
+            },
+            {
+              // Favorite
+              type: "button",
+              props: {
+                radius: 5,
+                bgcolor: $color("white"),
+                hidden: !showFavorite
+              },
+              layout: function(make, view) {
+                var preView = view.prev
+                make.centerX.equalTo(preView)
+                make.top.equalTo(preView.bottom).offset(10)
+                make.size.equalTo($size(100, 30))
+              },
+              views: [{
+                type: "image",
+                props: {
+                  icon: $icon("061", $color("lightGray"), $size(72, 72)),
+                  bgcolor: $color("clear")
+                },
+                layout: function(make, view) {
+                  make.centerY.equalTo(view.super)
+                  make.width.height.equalTo(16)
+                  make.left.inset(10)
+                }
+              },
+              {
+                type: "label",
+                props: {
+                  text: "Favorite",
+                  font: $font("bold", 14),
+                  autoFontSize: true,
+                  align: true,
+                  textColor: $color("lightGray")
+                },
+                layout: function(make, view) {
+                  var preView = view.prev
+                  make.centerY.equalTo(view.super)
+                  make.left.equalTo(preView.right).offset(10)
+                  make.right.inset(10)
+                }
+              }],
+              events: {
+                tapped: function(sender) {
+                  if (unique(cellData.id)) {
+                    favoriteItem(cellData)
+                  } else {
+                    $ui.toast("You have favorited already")
+                  }
+                }
+              }
             }
           ]
         },
@@ -1444,6 +1530,11 @@ function star(str) {
     starString += i < star ? "★" : "☆"
   }
   return starString
+}
+
+function unique(id) {
+  var file = JSON.stringify(FAVORITE_FILE)
+  return file.indexOf(id) == -1 ? true : false
 }
 
 function main() {
